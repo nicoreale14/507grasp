@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#5fd96d" />
+    <link rel="manifest" href="manifest.json" />
+    <title>507 Grasp</title>
+    <script src="https://unpkg.com/@zxing/library@latest"></script>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" />
+
+    <style>
+      :root {
+        --bg-color: #f5f7fa;
+        --text-color: #333;
+        --muted-text: #6b7280;
+        --accent-color: #5fd96d;
+        --accent-hover: #4ac458;
+        --card-bg: #ffffff;
+        --hover-row: #f0fdf4;
+        --border: #e5e7eb;
+        --danger: #ef4444;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        margin: 0;
+        padding: 16px;
+        transition: background 0.3s ease, color 0.3s ease;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      h1 {
+        font-size: 22px;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      input[type="text"] {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        font-size: 16px;
+        background: var(--card-bg);
+      }
+      .toolbar {
+        display: grid;
+        grid-template-columns: 1fr auto auto auto;
+        gap: 8px;
+        margin-top: 12px;
+      }
+      button {
+        background-color: var(--accent-color);
+        color: white;
+        border: none;
+        padding: 10px 14px;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: background 0.2s ease, transform 0.02s ease;
+        font-size: 15px;
+      }
+      button:hover {
+        background-color: var(--accent-hover);
+      }
+      button:active {
+        transform: translateY(1px);
+      }
+      .btn-ghost {
+        background: transparent;
+        color: var(--text-color);
+        border: 1px solid var(--border);
+      }
+      .btn-danger {
+        background: var(--danger);
+      }
+
+      .card {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+      }
+
+      /* Acordeones por proveedor */
+      #lista {
+        margin-top: 16px;
+        display: grid;
+        gap: 10px;
+      }
+      details.proveedor {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        overflow: hidden;
+      }
+      details.proveedor > summary {
+        list-style: none;
+        cursor: pointer;
+        padding: 12px 14px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        user-select: none;
+      }
+      details.proveedor[open] > summary {
+        border-bottom: 1px solid var(--border);
+      }
+      .sum-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .chip {
+        font-size: 12px;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: var(--hover-row);
+        border: 1px solid var(--border);
+        color: #065f46;
+        font-weight: 600;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th,
+      td {
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--border);
+      }
+      th {
+        text-align: left;
+        background: #f8fafc;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+      }
+      tr:hover td {
+        background: var(--hover-row);
+      }
+      .td-actions {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+      .muted {
+        color: var(--muted-text);
+        font-size: 14px;
+      }
+
+      /* Modal */
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.45);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        z-index: 999;
+      }
+      .modal {
+        width: 100%;
+        max-width: 560px;
+      }
+      .modal header {
+        padding: 14px 16px 0 16px;
+      }
+      .modal .content {
+        padding: 16px;
+        display: grid;
+        gap: 12px;
+      }
+      .form-row {
+        display: grid;
+        gap: 10px;
+        grid-template-columns: 1fr 1fr;
+      }
+      .form-row > div {
+        display: grid;
+        gap: 6px;
+      }
+      label {
+        font-weight: 600;
+        font-size: 14px;
+      }
+      input[type="number"],
+      input[type="text"]#codigo,
+      input[type="text"]#descripcion,
+      input[type="text"]#proveedor {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--card-bg);
+        font-size: 15px;
+      }
+      .modal .footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        padding: 0 16px 16px 16px;
+      }
+      .grow {
+        flex: 1;
+      }
+
+      /* Cámara */
+      #preview {
+        width: 100%;
+        max-width: 420px;
+        display: none;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        margin-top: 10px;
+      }
+      #codigoDetectado {
+        display: none;
+        font-size: 16px;
+        font-weight: 600;
+        margin-top: 6px;
+        color: #22c55e;
+      }
+
+      /* Responsivo */
+      @media (max-width: 820px) {
+        .toolbar {
+          grid-template-columns: 1fr;
+        }
+        .form-row {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>📦507 Grasp</h1>
+      <div class="actions">
+        <button id="themeBtn" class="btn-ghost"
+          title="Tema claro/oscuro">🌓</button>
+        <button id="btnNuevo">➕ Agregar</button>
+      </div>
+    </header>
+
+    <div class="toolbar">
+      <input
+        type="text"
+        id="busqueda"
+        placeholder="Buscar por código o nombre (Enter para buscar rápido)"
+        autocomplete="off" />
+      <button id="btnBuscar">🔍 Buscar</button>
+      <button id="btnEscanearBuscar">📷 Escanear</button>
+      <button id="btnRefrescar" class="btn-ghost">↻ Actualizar</button>
+    </div>
+
+    <!-- Cámara -->
+    <video id="preview" autoplay></video>
+    <div id="codigoDetectado">Escaneando…</div>
+
+    <!-- Lista por proveedor -->
+    <section id="lista" aria-live="polite"></section>
+
+    <!-- Modal Agregar/Editar -->
+    <div id="modalBackdrop" class="modal-backdrop" role="dialog"
+      aria-modal="true">
+      <div class="modal card">
+        <header>
+          <h2 id="modalTitle">➕ Agregar producto</h2>
+        </header>
+        <div class="content">
+          <div class="form-row">
+            <div>
+              <label for="codigo">Código</label>
+              <div style="display:flex; gap:8px;">
+                <input type="text" id="codigo" inputmode="numeric" />
+                <button id="btnEscanearModal"
+                  title="Escanear código">📷</button>
+              </div>
+            </div>
+            <!-- Campo Proveedor -->
+            <div style="display:flex; flex-direction: column;">
+              <label for="proveedor">Proveedor:</label>
+              <select id="proveedor" name="proveedor"
+                style="padding:8px; border-radius:6px; border:1px solid #ccc;">
+                <option value>-- Seleccionar proveedor --</option>
+                <option value="nuevo">➕ Agregar nuevo proveedor...</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <div>
+                <label for="descripcion">Descripción</label>
+                <input type="text" id="descripcion" />
+              </div>
+              <div>
+                <label for="stock">Stock</label>
+                <input type="number" id="stock" min="0" step="1" />
+              </div>
+            </div>
+            <p id="modalHint" class="muted"></p>
+          </div>
+          <div class="footer">
+            <div class="grow">
+              <button id="btnEliminar" class="btn-danger"
+                style="display:none">🗑️
+                Eliminar</button>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button id="btnCancelar" class="btn-ghost">Cancelar</button>
+              <button id="btnGuardar">Guardar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <script>
+      // ====== CONFIG ======
+      const API_URL = "http://localhost:3000/productos";
+
+      // ====== STATE ======
+      let productosCache = [];
+      let codeReader = null;
+      let scanning = false;
+      let editandoCodigo = null; // null => modo agregar; string => modo editar
+
+      // ====== UTIL ======
+      const $ = (sel) => document.querySelector(sel);
+      const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+
+      function toast(msg) {
+        // Mini toast accesible (simple alert elegante)
+        console.log(msg);
+      }
+
+      function validarEAN13(codigo) {
+        if (!/^\d{13}$/.test(codigo)) return false;
+        let suma = 0;
+        for (let i = 0; i < 12; i++) {
+          const num = parseInt(codigo.charAt(i), 10);
+          suma += i % 2 === 0 ? num : num * 3;
+        }
+        const digito = (10 - (suma % 10)) % 10;
+        return digito === parseInt(codigo.charAt(12), 10);
+      }
+
+      function normalizarCodigo(codigo) {
+        if (/^2\d{12}$/.test(codigo)) return "7" + codigo.slice(1);
+        return codigo;
+      }
+
+      function groupByProveedor(items) {
+        const map = new Map();
+        for (const p of items) {
+          const prov = (p.PROVEEDOR || "Sin proveedor").trim();
+          if (!map.has(prov)) map.set(prov, []);
+          map.get(prov).push(p);
+        }
+        // Orden alfabético de proveedores y por descripción dentro
+        return [...map.entries()]
+          .sort((a, b) => a[0].localeCompare(b[0]))
+          .map(([prov, arr]) => [prov, arr.sort((x, y) => x.DESCRIPCION.localeCompare(y.DESCRIPCION))]);
+      }
+
+      function setTheme(dark = null) {
+        const root = document.documentElement.style;
+        const isDark =
+          dark !== null
+            ? dark
+            : localStorage.getItem("tema") === "oscuro";
+
+        if (isDark) {
+          root.setProperty("--bg-color", "#121212");
+          root.setProperty("--text-color", "#e0e0e0");
+          root.setProperty("--card-bg", "#1e1e1e");
+          root.setProperty("--hover-row", "#111827");
+          root.setProperty("--border", "#2b2f36");
+          localStorage.setItem("tema", "oscuro");
+        } else {
+          root.setProperty("--bg-color", "#f5f7fa");
+          root.setProperty("--text-color", "#333");
+          root.setProperty("--card-bg", "#ffffff");
+          root.setProperty("--hover-row", "#f0fdf4");
+          root.setProperty("--border", "#e5e7eb");
+          localStorage.setItem("tema", "claro");
+        }
+      }
+
+      // ====== RENDER ======
+      function renderLista(filtroTexto = "") {
+        const cont = $("#lista");
+        cont.innerHTML = "";
+
+        const filtro = (filtroTexto || "").toLowerCase().trim();
+        let listado = productosCache;
+
+        if (filtro) {
+          listado = productosCache.filter(
+            (p) =>
+              p.CODIGO.toLowerCase().includes(filtro) ||
+              p.DESCRIPCION.toLowerCase().includes(filtro)
+          );
+        }
+
+        if (!listado.length) {
+          const empty = document.createElement("div");
+          empty.className = "card";
+          empty.style.padding = "18px";
+          empty.innerHTML = `<strong>No hay resultados</strong><div class="muted">Probá con otro término o agregá un producto.</div>`;
+          cont.appendChild(empty);
+          return;
+        }
+
+        const grupos = groupByProveedor(listado);
+        for (const [prov, arr] of grupos) {
+          const det = document.createElement("details");
+          det.className = "proveedor";
+          det.open = true;
+
+          const sum = document.createElement("summary");
+          sum.innerHTML = `
+            <div class="sum-left">
+              <span>🏷️ ${prov}</span>
+              <span class="chip">${arr.length}</span>
+            </div>
+            <span class="muted">Click para expandir</span>
+          `;
+          det.appendChild(sum);
+
+          const table = document.createElement("table");
+          const thead = document.createElement("thead");
+          thead.innerHTML = `
+            <tr>
+              <th style="width:160px">Código</th>
+              <th>Descripción</th>
+              <th style="width:160px">Stock</th>
+              <th style="width:220px">Acciones</th>
+            </tr>
+          `;
+          table.appendChild(thead);
+
+          const tbody = document.createElement("tbody");
+          for (const p of arr) {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+              <td>${p.CODIGO}</td>
+              <td>${p.DESCRIPCION}</td>
+              <td>${Number(p.STOCK) ?? 0}</td>
+              <td class="td-actions">
+                <button class="btn-ghost" data-action="edit" data-codigo="${p.CODIGO}">✏️ Editar</button>
+                <button class="btn-danger" data-action="delete" data-codigo="${p.CODIGO}">🗑️ Eliminar</button>
+              </td>
+            `;
+            // click en fila también abre edición
+            tr.style.cursor = "pointer";
+            tr.addEventListener("click", (e) => {
+              // Evitar doble disparo si clic en botón
+              if (e.target.closest("button")) return;
+              openModalEditar(p);
+            });
+            // Acciones
+            tr.querySelector('[data-action="edit"]').addEventListener("click", () => openModalEditar(p));
+            tr.querySelector('[data-action="delete"]').addEventListener("click", () => eliminar(p.CODIGO));
+            tbody.appendChild(tr);
+          }
+          table.appendChild(tbody);
+          det.appendChild(table);
+          cont.appendChild(det);
+        }
+      }
+
+      // ====== API ======
+      async function apiList() {
+        const res = await fetch(API_URL);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      }
+      async function apiGet(codigo) {
+        const res = await fetch(`${API_URL}/${encodeURIComponent(codigo)}`);
+        if (!res.ok) return null;
+        return res.json();
+      }
+      async function apiDelete(codigo) {
+        const res = await fetch(`${API_URL}/${encodeURIComponent(codigo)}`, { method: "DELETE" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      }
+      async function apiSave(data, editandoCodigo) {
+        const url = editandoCodigo ? `${API_URL}/${encodeURIComponent(editandoCodigo)}` : API_URL;
+        const method = editandoCodigo ? "PUT" : "POST";
+        const res = await fetch(url, {
+          method,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json().catch(() => ({}));
+      }
+
+      async function cargarProductos(filtro = "") {
+        try {
+          const data = await apiList();
+          productosCache = Array.isArray(data) ? data : [];
+          renderLista(filtro);
+        } catch (e) {
+          console.error(e);
+          $("#lista").innerHTML = `<div class="card" style="padding:18px;"><strong>Error al cargar productos</strong><div class="muted">Verificá el servidor (${API_URL}).</div></div>`;
+        }
+      }
+
+      async function eliminar(codigo) {
+        if (!confirm(`¿Eliminar producto ${codigo}?`)) return;
+        try {
+          await apiDelete(codigo);
+          toast("Producto eliminado.");
+          await cargarProductos($("#busqueda").value);
+        } catch (e) {
+          alert("Error al eliminar producto.");
+        }
+      }
+
+      // ====== MODAL ======
+      function openModalAgregar(prefill = {}) {
+        editandoCodigo = null;
+        $("#modalTitle").textContent = "➕ Agregar producto";
+        $("#btnEliminar").style.display = "none";
+        $("#codigo").value = prefill.CODIGO || "";
+        $("#descripcion").value = prefill.DESCRIPCION || "";
+        $("#proveedor").value = prefill.PROVEEDOR || "";
+        $("#stock").value = prefill.STOCK != null ? prefill.STOCK : "";
+        $("#modalHint").textContent = "Completá los campos y guardá para crear el producto.";
+        $("#modalBackdrop").style.display = "flex";
+        $("#codigo").focus();
+      }
+
+      function openModalEditar(prod) {
+        editandoCodigo = prod.CODIGO;
+        $("#modalTitle").textContent = "✏️ Editar producto";
+        $("#btnEliminar").style.display = "inline-block";
+        $("#codigo").value = prod.CODIGO;
+        $("#descripcion").value = prod.DESCRIPCION || "";
+        $("#proveedor").value = prod.PROVEEDOR || "";
+        $("#stock").value = prod.STOCK ?? 0;
+        $("#modalHint").textContent = `Editando ${prod.CODIGO}`;
+        $("#modalBackdrop").style.display = "flex";
+        $("#descripcion").focus();
+      }
+
+      function closeModal() {
+        $("#modalBackdrop").style.display = "none";
+        editandoCodigo = null;
+      }
+
+      async function guardarModal() {
+        const CODIGO = $("#codigo").value.trim();
+        const DESCRIPCION = $("#descripcion").value.trim();
+        const PROVEEDOR = $("#proveedor").value.trim();
+        const STOCK = parseInt($("#stock").value, 10) || 0;
+
+        if (!CODIGO || !DESCRIPCION) {
+          alert("Código y descripción son obligatorios.");
+          return;
+        }
+
+        if (/^\d+$/.test(CODIGO)) {
+          const code = normalizarCodigo(CODIGO);
+          if (code.length === 13 && !validarEAN13(code)) {
+            if (!confirm("El EAN-13 parece inválido. ¿Guardar de todas formas?")) return;
+          }
+        }
+
+        try {
+          await apiSave({ CODIGO, DESCRIPCION, PROVEEDOR, STOCK }, editandoCodigo);
+          closeModal();
+          await cargarProductos($("#busqueda").value);
+          toast("Guardado correctamente.");
+        } catch (e) {
+          console.error(e);
+          alert("Error al guardar producto.");
+        }
+      }
+
+      // ====== ESCANEO ======
+      async function escanearCodigo({ destino = "buscar" } = {}) {
+        if (scanning) return;
+        scanning = true;
+
+        const preview = $("#preview");
+        const codigoDetectado = $("#codigoDetectado");
+        preview.style.display = "block";
+        codigoDetectado.style.display = "block";
+        codigoDetectado.textContent = "Escaneando…";
+
+        if (!codeReader) {
+          const hints = new Map();
+          hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.EAN_13]);
+          hints.set(ZXing.DecodeHintType.ASSUME_GS1, false);
+          hints.set(ZXing.DecodeHintType.PURE_BARCODE, true);
+          codeReader = new ZXing.BrowserMultiFormatContinuousReader(hints);
+        }
+
+        let lastCode = null;
+        let matchCount = 0;
+
+        const constraints = { video: { facingMode: { ideal: "environment" } } };
+
+        try {
+          codeReader.decodeFromConstraints(constraints, preview, async (result) => {
+            if (!result) return;
+            let codigo = (result.result?.text || result.text || "").replace(/\D/g, "");
+            codigo = normalizarCodigo(codigo);
+            codigoDetectado.textContent = codigo || "Escaneando…";
+
+            if (codigo.length === 13 && validarEAN13(codigo)) {
+              if (lastCode === codigo) matchCount++;
+              else {
+                lastCode = codigo;
+                matchCount = 1;
+              }
+              if (matchCount >= 2) {
+                stopScanning();
+                await manejarCodigoDetectado(codigo, destino);
+              }
+            }
+          });
+        } catch (error) {
+          console.warn("Error de escaneo:", error);
+          alert("No se pudo iniciar la cámara.");
+          stopScanning();
+        }
+
+        function stopScanning() {
+          scanning = false;
+          if (codeReader) codeReader.reset();
+          preview.style.display = "none";
+          codigoDetectado.style.display = "none";
+        }
+      }
+
+      async function manejarCodigoDetectado(codigo, destino) {
+        // destino: "buscar" (abre modal según exista) o "modal" (rellena input del modal)
+        if (destino === "modal") {
+          $("#codigo").value = codigo;
+          $("#descripcion").focus();
+          return;
+        }
+
+        const prod = await apiGet(codigo);
+        if (prod) {
+          openModalEditar(prod);
+        } else {
+          openModalAgregar({ CODIGO: codigo });
+        }
+      }
+
+      // ====== BÚSQUEDA ======
+      async function buscar() {
+        const q = $("#busqueda").value.trim();
+        const filtro = q.toLowerCase();
+
+        // Si es código EAN exacto, intentamos buscar directo y abrir modal
+        if (/^\d{13}$/.test(q)) {
+          const code = normalizarCodigo(q);
+          const prod = await apiGet(code);
+          if (prod) {
+            openModalEditar(prod);
+            return;
+          }
+        }
+
+        // Si no es EAN exacto, filtramos la lista y si queda 1 resultado abrimos modal
+        const results = productosCache.filter(
+          (p) =>
+            p.CODIGO.toLowerCase().includes(filtro) ||
+            p.DESCRIPCION.toLowerCase().includes(filtro)
+        );
+
+        renderLista(q);
+
+        if (results.length === 1) {
+          openModalEditar(results[0]);
+        } else if (results.length === 0 && q) {
+          // Ofrecer crear si no hay resultados
+          if (confirm("No se encontraron resultados. ¿Querés agregar este producto?")) {
+            openModalAgregar({ DESCRIPCION: q });
+          }
+        }
+      }
+
+      // ====== EVENTOS UI ======
+      $("#themeBtn").addEventListener("click", () => {
+        const dark = localStorage.getItem("tema") !== "oscuro";
+        setTheme(dark);
+      });
+
+      $("#btnRefrescar").addEventListener("click", () => cargarProductos($("#busqueda").value));
+      $("#btnBuscar").addEventListener("click", buscar);
+      $("#busqueda").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") buscar();
+      });
+      $("#busqueda").addEventListener("input", (e) => {
+        // búsqueda en tiempo real
+        renderLista(e.target.value);
+      });
+
+      $("#btnEscanearBuscar").addEventListener("click", () => escanearCodigo({ destino: "buscar" }));
+      $("#btnNuevo").addEventListener("click", () => openModalAgregar());
+
+      // Modal
+      $("#btnCancelar").addEventListener("click", closeModal);
+      $("#btnGuardar").addEventListener("click", guardarModal);
+      $("#btnEliminar").addEventListener("click", async () => {
+        if (!editandoCodigo) return;
+        await eliminar(editandoCodigo);
+        closeModal();
+      });
+
+      // Cerrar modal con ESC o clic fuera
+      $("#modalBackdrop").addEventListener("click", (e) => {
+        if (e.target.id === "modalBackdrop") closeModal();
+      });
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeModal();
+      });
+
+      // Escaneo dentro del modal (para llenar campo código)
+      $("#btnEscanearModal").addEventListener("click", () => {
+        if ($("#modalBackdrop").style.display !== "flex") openModalAgregar();
+        escanearCodigo({ destino: "modal" });
+      });
+
+      // ====== INIT ======
+      window.addEventListener("load", async () => {
+        setTheme(); // respeta preferencia guardada
+        await cargarProductos();
+      });
+
+
+      
+    </script>
+      <script>
+// Cuando se abre el modal de edición, cargar proveedores desde el servidor
+function cargarProveedores() {
+    fetch('get_proveedores.php') // Este PHP debe leer tu Excel o base y devolver JSON
+        .then(response => response.json())
+        .then(proveedores => {
+            const select = document.getElementById('proveedor');
+            // Eliminar todas las opciones excepto "nuevo"
+            select.innerHTML = '<option value="">-- Seleccionar proveedor --</option>';
+            proveedores.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.nombre;
+                opt.textContent = p.nombre;
+                select.appendChild(opt);
+            });
+            // Agregar opción "nuevo"
+            const optNuevo = document.createElement('option');
+            optNuevo.value = "nuevo";
+            optNuevo.textContent = "➕ Agregar nuevo proveedor...";
+            select.appendChild(optNuevo);
+        })
+        .catch(err => console.error('Error cargando proveedores:', err));
+}
+
+// Manejo de agregar nuevo proveedor
+document.getElementById("proveedor").addEventListener("change", function() {
+    if (this.value === "nuevo") {
+        const nuevoProveedor = prompt("Ingrese el nombre del nuevo proveedor:");
+        if (nuevoProveedor && nuevoProveedor.trim() !== "") {
+            fetch('agregar_proveedor.php', { // Guarda en tu Excel/base
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nombre: nuevoProveedor })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    cargarProveedores();
+                    setTimeout(() => this.value = nuevoProveedor, 200);
+                }
+            });
+        } else {
+            this.value = "";
+        }
+    }
+});
+</script>
+    </body>
+  </html>
